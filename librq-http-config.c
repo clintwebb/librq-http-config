@@ -174,34 +174,32 @@ static void waiting_free(waiting_t *waiting)
 	assert(waiting);
 	
 	assert(waiting->cfg);
-	assert(waiting->cfg->rq);
-	assert(waiting->cfg->rq->bufpool);
 	
 	if (waiting->redirect) {
 		assert(waiting->queue == NULL);
 		assert(waiting->propath == NULL);
 		assert(waiting->leftover == NULL);
 		expbuf_clear(waiting->redirect);
-		expbuf_pool_return(waiting->cfg->rq->bufpool, waiting->redirect);
-		waiting->redirect = NULL;
+		waiting->redirect = expbuf_free(waiting->redirect);
+		assert(waiting->redirect == NULL);
 	}
 	else {
 		if (waiting->queue) {
 			expbuf_clear(waiting->queue);
-			expbuf_pool_return(waiting->cfg->rq->bufpool, waiting->queue);
-			waiting->queue = NULL;
+			waiting->queue = expbuf_free(waiting->queue);
+			assert(waiting->queue == NULL);
 		}
 		
 		if (waiting->propath) {
 			expbuf_clear(waiting->propath);
-			expbuf_pool_return(waiting->cfg->rq->bufpool, waiting->propath);
-			waiting->propath = NULL;
+			waiting->propath = expbuf_free(waiting->propath);
+			assert(waiting->propath == NULL);
 		}
 		
 		if (waiting->leftover) {
 			expbuf_clear(waiting->leftover);
-			expbuf_pool_return(waiting->cfg->rq->bufpool, waiting->leftover);
-			waiting->leftover = NULL;
+			waiting->leftover = expbuf_free(waiting->leftover);
+			assert(waiting->leftover == NULL);
 		}
 	}
 	
@@ -234,9 +232,8 @@ static void cmdRedirect(waiting_t *waiting, const risp_length_t length, const ri
 	assert(waiting->redirect == NULL);
 
 	assert(waiting->cfg);
-	assert(waiting->cfg->rq);
-	assert(waiting->cfg->rq->bufpool);
-	waiting->redirect = expbuf_pool_new(waiting->cfg->rq->bufpool, length+1);
+	waiting->redirect = expbuf_init(NULL, length+1);
+	assert(waiting->redirect);
 	expbuf_set(waiting->redirect, data, length);
 
 	// add the result to the cache (if we have one)
@@ -311,10 +308,8 @@ static void cmdQueue(waiting_t *waiting, const risp_length_t length, const risp_
 	assert(waiting->redirect == NULL);
 
 	if (waiting->queue == NULL) {
-		assert(waiting->cfg);
-		assert(waiting->cfg->rq);
-		assert(waiting->cfg->rq->bufpool);
-		waiting->queue = expbuf_pool_new(waiting->cfg->rq->bufpool, length+1);
+		waiting->queue = expbuf_init(NULL, length+1);
+		assert(waiting->queue);
 	}
 
 	expbuf_set(waiting->queue, data, length);
@@ -331,10 +326,8 @@ static void cmdPath(waiting_t *waiting, const risp_length_t length, const risp_d
 	assert(waiting->arg);
 
 	if (waiting->propath == NULL) {
-		assert(waiting->cfg);
-		assert(waiting->cfg->rq);
-		assert(waiting->cfg->rq->bufpool);
-		waiting->propath = expbuf_pool_new(waiting->cfg->rq->bufpool, length+1);
+		waiting->propath = expbuf_init(NULL, length+1);
+		assert(waiting->propath);
 	}
 
 	expbuf_set(waiting->propath, data, length);
@@ -350,10 +343,8 @@ static void cmdLeftover(waiting_t *waiting, const risp_length_t length, const ri
 	assert(waiting->arg);
 
 	if (waiting->leftover == NULL) {
-		assert(waiting->cfg);
-		assert(waiting->cfg->rq);
-		assert(waiting->cfg->rq->bufpool);
-		waiting->leftover = expbuf_pool_new(waiting->cfg->rq->bufpool, length+1);
+		waiting->leftover = expbuf_init(NULL, length+1);
+		assert(waiting->leftover);
 	}
 
 	expbuf_set(waiting->leftover, data, length);
